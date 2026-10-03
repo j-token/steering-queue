@@ -1,0 +1,6 @@
+# Claude Code가 플러그인을 불러올 때마다 다시 만드는 타입 파일
+.claude-plugin/types/
+
+node_modules/
+.DS_Store
+Thumbs.db

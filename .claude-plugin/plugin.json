@@ -1,0 +1,20 @@
+{
+  "name": "steering-queue",
+  "version": "0.2.0",
+  "description": "Queue messages you type while Claude is working, and steer them into the current turn only when you choose.",
+  "author": {
+    "name": "J-token",
+    "url": "https://github.com/j-token"
+  },
+  "homepage": "https://github.com/j-token/steering-queue",
+  "repository": "https://github.com/j-token/steering-queue",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "installKeybindings": {
+      "type": "boolean",
+      "title": "Install queue keys",
+      "description": "On session start, add shift+up (open the queue) and shift+down (back to the prompt) to ~/.claude/keybindings.json, replacing ctrl+x tab and esc.",
+      "default": true
+    }
+  }
+}
