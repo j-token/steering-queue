@@ -51,17 +51,17 @@ Queue 2 · sends when this turn ends · shift+↑ to manage
 - 다른 키 설정은 그대로 둡니다. 같은 키를 이미 다른 동작에 쓰고 있으면 덮어쓰지 않고 알림으로 알려 줍니다.
 - 파일이 올바른 JSON이 아니면 건드리지 않습니다.
 - Claude Code는 시작할 때 키 설정을 읽으므로, 처음 설치한 뒤 한 번 다시 시작하세요.
-- 터미널이 `shift+↑` / `shift+↓`를 별도 키로 보내 주지 않으면 `/queue-keys remove`로 되돌리세요.
+- 터미널이 `shift+↑` / `shift+↓`를 별도 키로 보내 주지 않으면 `/steering-key-install remove`로 되돌리세요.
 
 Claude Code 플러그인은 키 바인딩을 직접 내놓을 수 없습니다. 매니페스트에 그런 항목이 없고, 플러그인 `settings.json`에서는 `agent`와 `subagentStatusLine`만 적용됩니다([문서](https://code.claude.com/docs/en/plugins/components.md)). 그래서 이 플러그인이 `keybindings.json`에 직접 병합합니다.
 
-### `/queue-keys` 명령어
+### `/steering-key-install` 명령어
 
 | 명령어 | 동작 |
 |---|---|
-| `/queue-keys` 또는 `/queue-keys install` | 키를 설치하고 자동 설치를 켭니다 |
-| `/queue-keys remove` | 이 플러그인이 넣은 키만 빼서 `ctrl+x tab`·`esc`로 되돌리고 자동 설치를 끕니다 |
-| `/queue-keys status` | 지금 쓰이는 키와 파일 경로를 보여 줍니다 |
+| `/steering-key-install` 또는 `/steering-key-install install` | 키를 설치하고 자동 설치를 켭니다 |
+| `/steering-key-install remove` | 이 플러그인이 넣은 키만 빼서 `ctrl+x tab`·`esc`로 되돌리고 자동 설치를 끕니다 |
+| `/steering-key-install status` | 지금 쓰이는 키와 파일 경로를 보여 줍니다 |
 
 작업 중에도 바로 실행됩니다. 바뀐 키는 Claude Code를 다시 시작하면 적용됩니다.
 

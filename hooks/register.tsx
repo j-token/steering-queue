@@ -156,7 +156,7 @@ async function keyStatus($: EngineInterface) {
   return `Queue keys: ${hints.enter} to open, ${hints.leave} to leave (${path}).`
 }
 
-// /queue-keys [install|remove|status]
+// /steering-key-install [install|remove|status]
 async function runKeysCommand($: EngineInterface, args: string) {
   const action = args.trim().toLowerCase() || 'install'
   if (action === 'install') {
@@ -167,7 +167,7 @@ async function runKeysCommand($: EngineInterface, args: string) {
   if (action === 'remove' || action === 'uninstall') return uninstallKeybindings($)
   if (action === 'status') return keyStatus($)
 
-  return 'Usage: /queue-keys [install|remove|status]'
+  return 'Usage: /steering-key-install [install|remove|status]'
 }
 
 async function restore($: EngineInterface, item: QueuedPrompt, reason: string) {
@@ -247,7 +247,7 @@ export const register: Register = (on, options) => {
     // 명령어 등록이 실패해도 키 설치는 이어서 한다
     await $.command
       .register({
-        name: 'queue-keys',
+        name: 'steering-key-install',
         description: 'Install, remove or check the steering-queue keys (shift+↑ / shift+↓)',
         argumentHint: '[install|remove|status]',
         immediate: true,
@@ -265,7 +265,7 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  on('command.run', { command: 'queue-keys' }, async ($, e) => ({
+  on('command.run', { command: 'steering-key-install' }, async ($, e) => ({
     text: await runKeysCommand($, e.args).catch(() => 'Queue keys: could not update keybindings.json.'),
   }))
 

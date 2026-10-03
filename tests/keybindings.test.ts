@@ -152,12 +152,12 @@ function fakeWorld(on: any, initial?: string) {
 }
 
 async function runKeys($: any, args: string) {
-  const result = await $.command.run({ command: 'queue-keys', args, origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 100 } })
+  const result = await $.command.run({ command: 'steering-key-install', args, origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 100 } })
 
   return result.text as string
 }
 
-test('/queue-keys로 설치·상태 확인·제거를 한다', async ($, on) => {
+test('/steering-key-install로 설치·상태 확인·제거를 한다', async ($, on) => {
   const { files, configSets } = fakeWorld(on, JSON.stringify({ bindings: [{ context: 'Chat', bindings: { 'ctrl+e': 'chat:externalEditor' } }] }))
 
   expect(await runKeys($, 'install')).toContain('Queue keys installed: shift+↑ to open, shift+↓ to leave')
@@ -175,5 +175,5 @@ test('/queue-keys로 설치·상태 확인·제거를 한다', async ($, on) => 
   expect(configSets.at(-1)).toEqual({ key: 'steering-queue.installKeybindings', value: false })
   expect(await runKeys($, 'status')).toContain('ctrl+x tab to open')
 
-  expect(await runKeys($, 'nope')).toContain('Usage: /queue-keys')
+  expect(await runKeys($, 'nope')).toContain('Usage: /steering-key-install')
 })
