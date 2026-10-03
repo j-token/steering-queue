@@ -1,6 +1,6 @@
 {
   "name": "steering-queue",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Queue messages you type while Claude is working, and steer them into the current turn only when you choose.",
   "author": {
     "name": "J-token",

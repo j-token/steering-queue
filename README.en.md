@@ -49,9 +49,21 @@ On session start the plugin merges these bindings into `~/.claude/keybindings.js
 - Your other bindings are kept. If a key is already bound to something else, it is left alone and a toast tells you.
 - If the file is not valid JSON, it is not touched.
 - Claude Code reads key bindings at startup, so restart once after the first install.
-- If your terminal does not send `shift+↑` / `shift+↓` as separate keys, turn the install off (below) and remove those four lines.
+- If your terminal does not send `shift+↑` / `shift+↓` as separate keys, run `/queue-keys remove`.
 
-To turn the install off, set the plugin option `installKeybindings` to `false` with `/plugin configure steering-queue@steering-queue`, or in `~/.claude/settings.json`:
+Claude Code plugins cannot ship key bindings themselves: the manifest has no such field, and a plugin `settings.json` only applies `agent` and `subagentStatusLine` ([docs](https://code.claude.com/docs/en/plugins/components.md)). That is why this plugin merges into `keybindings.json` instead.
+
+### `/queue-keys` command
+
+| Command | Action |
+|---|---|
+| `/queue-keys` or `/queue-keys install` | Install the keys and turn auto-install on |
+| `/queue-keys remove` | Remove only this plugin's keys (back to `ctrl+x tab` and `esc`) and turn auto-install off |
+| `/queue-keys status` | Show the keys in use and the file path |
+
+It runs right away, even during a turn. Restart Claude Code to apply key changes.
+
+To turn only the auto-install off, set the plugin option `installKeybindings` to `false` with `/plugin configure steering-queue@steering-queue`, or in `~/.claude/settings.json`:
 
 ```json
 { "pluginConfigs": { "steering-queue@steering-queue": { "options": { "installKeybindings": false } } } }
@@ -104,7 +116,7 @@ Do not load the same plugin twice (for example installed and `--plugin-dir` at t
 hooks/hooks.json                 hooks module list
 hooks/register.tsx               queue, steering, band UI, keyboard
 hooks/queue-list.tsx             drag-and-drop list (Client module)
-hooks/keybindings.ts             keybindings.json merge
+hooks/keybindings.ts             keybindings.json merge and removal
 types/index.d.ts                 plugin state types
 tests/                           tests
 ```

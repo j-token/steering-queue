@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { KeyboardMode, QueuedPrompt, SteerEntry } from '../types'
-import { DEFAULT_HINTS, mergeKeybindings } from './keybindings'
+import { DEFAULT_HINTS, mergeKeybindings, readHints, removeKeybindings } from './keybindings'
 
 const queue = atom({ plugin: 'steering-queue', key: 'queue' } as const, [])
 const activeTurnId = atom({ plugin: 'steering-queue', key: 'activeTurnId' } as const, null)
@@ -80,27 +80,94 @@ async function runAction($: EngineInterface, requestId: string, action: Promise<
   await enterMode($, requestId, { kind: 'list' })
 }
 
-// ~/.claude/keybindings.json에 shift+↑(들어가기)·shift+↓(빠져나오기)를 넣고 ctrl+x tab·esc를 끈다
-async function installKeybindings($: EngineInterface) {
+// keybindings.json 경로: CLAUDE_CONFIG_DIR, 없으면 홈의 .claude
+async function keybindingsPath($: EngineInterface) {
   const home = (await $.env.get('USERPROFILE')) ?? (await $.env.get('HOME'))
   const configDir = (await $.env.get('CLAUDE_CONFIG_DIR')) ?? (home === undefined ? undefined : `${home}/.claude`)
-  if (configDir === undefined) return
 
-  const path = `${configDir.replace(/[\\/]+$/, '')}/keybindings.json`
-  const existing = (await $.fs.exists(path)) ? await $.fs.read(path) : undefined
-  const merged = mergeKeybindings(existing)
+  return configDir === undefined ? undefined : `${configDir.replace(/[\/]+$/, '')}/keybindings.json`
+}
+
+async function readKeybindings($: EngineInterface, path: string) {
+  return (await $.fs.exists(path)) ? await $.fs.read(path) : undefined
+}
+
+// 이 플러그인의 자동 설치 옵션을 켜거나 끈다. 설치 방식에 따라 이름이 달라 목록에서 찾는다
+async function setAutoInstall($: EngineInterface, value: boolean) {
+  const row = (await $.config.list()).find(
+    one => one.key.startsWith('steering-queue') && one.key.endsWith('.installKeybindings'),
+  )
+  if (row === undefined) return false
+
+  const result = await $.config.set({ key: row.key, value }).catch(() => ({ deny: 'failed' }))
+
+  return result.deny === undefined
+}
+
+// shift+↑(들어가기)·shift+↓(빠져나오기)를 넣고 ctrl+x tab·esc를 끈다. 결과 문구와 변경 여부를 돌려준다
+async function installKeybindings($: EngineInterface) {
+  const path = await keybindingsPath($)
+  if (path === undefined) return { message: 'Queue keys: could not find the Claude config folder.', isChanged: false }
+
+  const merged = mergeKeybindings(await readKeybindings($, path))
   await update($, keys, () => merged.hints)
 
   if (merged.kind === 'unreadable') {
-    $.ui.toast('Queue: could not read keybindings.json, keys not installed')
-
-    return
+    return { message: `Queue keys: ${path} is not valid JSON, so it was left alone.`, isChanged: true }
   }
-  if (merged.kind === 'unchanged') return
+  if (merged.kind === 'unchanged') {
+    return { message: `Queue keys already installed: ${merged.hints.enter} to open, ${merged.hints.leave} to leave.`, isChanged: false }
+  }
 
   await $.fs.write(path, merged.text)
-  const conflict = merged.conflicts.length > 0 ? ` (kept your existing: ${merged.conflicts.join(', ')})` : ''
-  $.ui.toast(`Queue keys installed: ${merged.hints.enter} to open, ${merged.hints.leave} to leave${conflict}`)
+  const conflict = merged.conflicts.length > 0 ? ` Kept your existing: ${merged.conflicts.join(', ')}.` : ''
+
+  return {
+    message: `Queue keys installed: ${merged.hints.enter} to open, ${merged.hints.leave} to leave. Restart Claude Code to apply.${conflict}`,
+    isChanged: true,
+  }
+}
+
+// 이 플러그인이 넣은 키만 빼고 자동 설치를 끈다
+async function uninstallKeybindings($: EngineInterface) {
+  const path = await keybindingsPath($)
+  if (path === undefined) return 'Queue keys: could not find the Claude config folder.'
+
+  const removed = removeKeybindings(await readKeybindings($, path))
+  if (removed.kind === 'unreadable') return `Queue keys: ${path} is not valid JSON, so it was left alone.`
+  if (removed.kind === 'changed') await $.fs.write(path, removed.text)
+  await update($, keys, () => removed.hints)
+
+  const isOff = await setAutoInstall($, false)
+  const auto = isOff ? ' Auto-install is now off.' : ' Turn off auto-install in /config, or they come back next session.'
+
+  return removed.kind === 'changed'
+    ? `Queue keys removed: back to ctrl+x tab and esc. Restart Claude Code to apply.${auto}`
+    : `Queue keys were not installed.${auto}`
+}
+
+async function keyStatus($: EngineInterface) {
+  const path = await keybindingsPath($)
+  if (path === undefined) return 'Queue keys: could not find the Claude config folder.'
+
+  const hints = readHints(await readKeybindings($, path))
+  await update($, keys, () => hints)
+
+  return `Queue keys: ${hints.enter} to open, ${hints.leave} to leave (${path}).`
+}
+
+// /queue-keys [install|remove|status]
+async function runKeysCommand($: EngineInterface, args: string) {
+  const action = args.trim().toLowerCase() || 'install'
+  if (action === 'install') {
+    await setAutoInstall($, true)
+
+    return (await installKeybindings($)).message
+  }
+  if (action === 'remove' || action === 'uninstall') return uninstallKeybindings($)
+  if (action === 'status') return keyStatus($)
+
+  return 'Usage: /queue-keys [install|remove|status]'
 }
 
 async function restore($: EngineInterface, item: QueuedPrompt, reason: string) {
@@ -177,12 +244,30 @@ async function edit($: EngineInterface, id: string) {
 
 export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
+    // 명령어 등록이 실패해도 키 설치는 이어서 한다
+    await $.command
+      .register({
+        name: 'queue-keys',
+        description: 'Install, remove or check the steering-queue keys (shift+↑ / shift+↓)',
+        argumentHint: '[install|remove|status]',
+        immediate: true,
+      })
+      .catch(() => undefined)
+
+    // 플러그인은 키 바인딩을 선언으로 내놓을 수 없어(매니페스트·설정 모두 미지원) keybindings.json에 직접 병합한다
     if (options.installKeybindings !== false) {
-      await installKeybindings($).catch(() => $.ui.toast('Queue: could not install keys'))
+      const installed = await installKeybindings($).catch(() => ({ message: 'Queue: could not install keys', isChanged: true }))
+      if (installed.isChanged) $.ui.toast(installed.message)
+    } else {
+      await keyStatus($).catch(() => undefined)
     }
 
     return next(e)
   })
+
+  on('command.run', { command: 'queue-keys' }, async ($, e) => ({
+    text: await runKeysCommand($, e.args).catch(() => 'Queue keys: could not update keybindings.json.'),
+  }))
 
   on('prompt.submit', async ($, e, next) => {
     // 입력창에서 제출했다는 것은 밴드를 빠져나왔다는 뜻이다. 열어 둔 메뉴를 닫는다

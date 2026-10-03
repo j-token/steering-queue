@@ -51,9 +51,21 @@ Queue 2 · sends when this turn ends · shift+↑ to manage
 - 다른 키 설정은 그대로 둡니다. 같은 키를 이미 다른 동작에 쓰고 있으면 덮어쓰지 않고 알림으로 알려 줍니다.
 - 파일이 올바른 JSON이 아니면 건드리지 않습니다.
 - Claude Code는 시작할 때 키 설정을 읽으므로, 처음 설치한 뒤 한 번 다시 시작하세요.
-- 터미널이 `shift+↑` / `shift+↓`를 별도 키로 보내 주지 않으면, 아래 방법으로 자동 설치를 끄고 위 네 줄을 지우세요.
+- 터미널이 `shift+↑` / `shift+↓`를 별도 키로 보내 주지 않으면 `/queue-keys remove`로 되돌리세요.
 
-자동 설치를 끄려면 `/plugin configure steering-queue@steering-queue`에서 `installKeybindings`를 `false`로 바꾸거나, `~/.claude/settings.json`에 다음을 넣습니다.
+Claude Code 플러그인은 키 바인딩을 직접 내놓을 수 없습니다. 매니페스트에 그런 항목이 없고, 플러그인 `settings.json`에서는 `agent`와 `subagentStatusLine`만 적용됩니다([문서](https://code.claude.com/docs/en/plugins/components.md)). 그래서 이 플러그인이 `keybindings.json`에 직접 병합합니다.
+
+### `/queue-keys` 명령어
+
+| 명령어 | 동작 |
+|---|---|
+| `/queue-keys` 또는 `/queue-keys install` | 키를 설치하고 자동 설치를 켭니다 |
+| `/queue-keys remove` | 이 플러그인이 넣은 키만 빼서 `ctrl+x tab`·`esc`로 되돌리고 자동 설치를 끕니다 |
+| `/queue-keys status` | 지금 쓰이는 키와 파일 경로를 보여 줍니다 |
+
+작업 중에도 바로 실행됩니다. 바뀐 키는 Claude Code를 다시 시작하면 적용됩니다.
+
+자동 설치만 끄려면 `/plugin configure steering-queue@steering-queue`에서 `installKeybindings`를 `false`로 바꾸거나, `~/.claude/settings.json`에 다음을 넣습니다.
 
 ```json
 { "pluginConfigs": { "steering-queue@steering-queue": { "options": { "installKeybindings": false } } } }
@@ -106,7 +118,7 @@ claude --plugin-dir ./steering-queue
 hooks/hooks.json                 훅 모듈 목록
 hooks/register.tsx               대기열, 스티어링, 밴드 UI, 키보드
 hooks/queue-list.tsx             드래그 앤 드롭 목록 (Client 모듈)
-hooks/keybindings.ts             keybindings.json 병합
+hooks/keybindings.ts             keybindings.json 병합·제거
 types/index.d.ts                 플러그인 상태 타입
 tests/                           테스트
 ```
