@@ -1,0 +1,15 @@
+{
+  "name": "steering-queue",
+  "description": "Claude Code plugin: queue mid-turn messages and steer them when you choose.",
+  "owner": {
+    "name": "J-token",
+    "url": "https://github.com/j-token"
+  },
+  "plugins": [
+    {
+      "name": "steering-queue",
+      "source": "./",
+      "description": "Queue messages you type while Claude is working, and steer them into the current turn only when you choose."
+    }
+  ]
+}
